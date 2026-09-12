@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دانلود از یوتیوب</title>
+<style>
+  body {
+    font-family: Tahoma, Arial, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+  .box {
+    background: #16213e;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  h1 { font-size: 20px; margin-bottom: 20px; text-align: center; }
+  input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #0f172a;
+    color: #eee;
+    font-size: 15px;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+  }
+  select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #0f172a;
+    color: #eee;
+    margin-bottom: 12px;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: #4f46e5;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button:disabled { background: #555; cursor: not-allowed; }
+  #result { margin-top: 18px; text-align: center; }
+  #result a {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 12px 20px;
+    background: #16a34a;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+  }
+  .error { color: #f87171; margin-top: 12px; text-align: center; }
+  .hint { font-size: 12px; color: #999; margin-bottom: 16px; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>دانلود از یوتیوب و شبکه‌های دیگر</h1>
+    <div class="hint">لینک ویدیو رو پیست کن و دکمه‌ی دانلود رو بزن</div>
+    <input type="text" id="urlInput" placeholder="https://www.youtube.com/watch?v=...">
+    <select id="typeSelect">
+      <option value="video">ویدیو</option>
+      <option value="audio">فقط صدا (MP3)</option>
+    </select>
+    <button id="goBtn" onclick="download()">دانلود</button>
+    <div id="result"></div>
+  </div>
+
+<script>
+  // آدرس API کوبالت خودت رو اینجا بذار (بدون اسلش آخر)
+  const API_URL = "https://Videoyouyou.onrender.com";
+
+  async function download() {
+    const url = document.getElementById('urlInput').value.trim();
+    const isAudio = document.getElementById('typeSelect').value === 'audio';
+    const resultDiv = document.getElementById('result');
+    const btn = document.getElementById('goBtn');
+
+    if (!url) {
+      resultDiv.innerHTML = '<div class="error">لینک رو وارد کن</div>';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'در حال پردازش...';
+    resultDiv.innerHTML = '';
+
+    try {
+      const res = await fetch(API_URL + "/", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          url: url,
+          downloadMode: isAudio ? "audio" : "auto",
+          videoQuality: "1080",
+          audioFormat: "mp3"
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.status === "error") {
+        resultDiv.innerHTML = `<div class="error">خطا: ${data.error?.code || 'نامشخص'}</div>`;
+      } else if (data.url) {
+        resultDiv.innerHTML = `<a href="${data.url}" target="_blank" rel="noopener">دریافت فایل</a>`;
+      } else if (data.status === "picker" && data.picker?.length) {
+        let html = '<div style="margin-top:10px;">چند گزینه پیدا شد:</div>';
+        data.picker.forEach((item, i) => {
+          html += `<a href="${item.url}" target="_blank" rel="noopener" style="display:block;margin-top:8px;">گزینه ${i+1}</a>`;
+        });
+        resultDiv.innerHTML = html;
+      } else {
+        resultDiv.innerHTML = '<div class="error">پاسخ نامشخص از سرور</div>';
+      }
+    } catch (e) {
+      resultDiv.innerHTML = '<div class="error">خطا در اتصال به سرور. مطمئن شو API روشنه.</div>';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'دانلود';
+    }
+  }
+</script>
+</body>
+</html>
